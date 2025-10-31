@@ -18,6 +18,7 @@ type UserService interface {
 	Logout(ctx context.Context, logoutReq dtos.LogoutRequest) (dtos.LogoutResponse, error)
 	Unregister(ctx context.Context, unregisterReq dtos.UnregisterRequest) (dtos.UnregisterResponse, error)
 	CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error)
+	ListAllUsers(ctx context.Context) ([]*model.User, error)
 }
 
 type UserServiceImpl struct {
@@ -85,4 +86,13 @@ func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterReq dtos.Un
 // TODO: implement
 func (us *UserServiceImpl) CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error) {
 	return dtos.CheckUserResponse{}, nil
+}
+
+func (us *UserServiceImpl) ListAllUsers(ctx context.Context) ([]*model.User, error) {
+	users, err := us.userRepository.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

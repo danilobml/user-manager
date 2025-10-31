@@ -58,3 +58,14 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	helpers.WriteJsonResponse(w, http.StatusCreated, resp)
 }
+
+func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	users, err := uh.UserService.ListAllUsers(ctx)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	helpers.WriteJsonResponse(w, http.StatusOK, users)
+}

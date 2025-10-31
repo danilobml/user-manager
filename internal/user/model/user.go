@@ -33,6 +33,6 @@ func ParseRole(s string) (Role, error) {
 type User struct {
 	ID             uuid.UUID `dynamodbav:"id" json:"id"`
 	Email          string    `dynamodbav:"email" json:"email"`
-	HashedPassword string    `dynamodbav:"hashed_password" json:"hashed_password"`
+	HashedPassword string    `dynamodbav:"hashed_password" json:"-"`
 	Roles          []Role    `dynamodbav:"roles" json:"roles"`
 }
