@@ -5,12 +5,12 @@ import "github.com/google/uuid"
 type Role int
 
 const (
-	Admin = iota
+	Admin Role = iota
 	AppUser
 )
 
 var roleName = map[Role]string{
-	Admin: "admin",
+	Admin:   "admin",
 	AppUser: "user",
 }
 
@@ -19,8 +19,8 @@ func (r Role) GetName() string {
 }
 
 type User struct {
-	Id uuid.UUID
-	Email string
-	HasedPassword string
-	Roles []Role
+	ID             uuid.UUID `dynamodbav:"id" json:"id"`
+	Email          string    `dynamodbav:"email" json:"email"`
+	HashedPassword string    `dynamodbav:"hashed_password" json:"hashed_password"`
+	Roles          []Role    `dynamodbav:"roles" json:"roles"`
 }
