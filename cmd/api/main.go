@@ -10,6 +10,7 @@ import (
 	"github.com/danilobml/user-manager/internal/httpx"
 	"github.com/danilobml/user-manager/internal/routes"
 	"github.com/danilobml/user-manager/internal/user/handler"
+	"github.com/danilobml/user-manager/internal/user/jwt"
 	"github.com/danilobml/user-manager/internal/user/repository"
 	"github.com/danilobml/user-manager/internal/user/service"
 )
@@ -30,12 +31,13 @@ func main() {
     }
 
 	// Initializations
+	jwtManager := jwt.NewJwtManager([]byte(config.App.JwtSecret))
 	// TODO: reactivate ddbRepo when infra implemented
 	// ddbClient := ddb.InitDynamo()
 
 	// userRepository := repository.NewUserRepositoryDdb(ddbClient)
 	userRepository := repository.NewUserRepositoryInMemory()
-	userService := service.NewUserserviceImpl(userRepository)
+	userService := service.NewUserserviceImpl(userRepository, jwtManager)
 	userHandler := handler.NewUserHandler(userService)
 
 	router := routes.NewRouter(userHandler)

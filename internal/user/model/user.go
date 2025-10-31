@@ -1,6 +1,9 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"github.com/danilobml/user-manager/internal/errs"
+	"github.com/google/uuid"
+)
 
 type Role int
 
@@ -16,6 +19,15 @@ var roleName = map[Role]string{
 
 func (r Role) GetName() string {
 	return roleName[r]
+}
+
+func ParseRole(s string) (Role, error) {
+	for r, name := range roleName {
+		if name == s {
+			return r, nil
+		}
+	}
+	return 0, errs.ErrParsingRoles
 }
 
 type User struct {
