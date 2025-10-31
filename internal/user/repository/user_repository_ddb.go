@@ -74,7 +74,7 @@ func (ur *UserRepositoryDdb) FindById(ctx context.Context, id uuid.UUID) (*model
 func (ur *UserRepositoryDdb) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	out, err := ur.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              aws.String(ur.tableName),
-		IndexName:              aws.String("email-index"), // make sure it exists
+		IndexName:              aws.String("email-index"),
 		KeyConditionExpression: aws.String("#email = :email"),
 		ExpressionAttributeNames: map[string]string{
 			"#email": "email",
@@ -98,17 +98,16 @@ func (ur *UserRepositoryDdb) FindByEmail(ctx context.Context, email string) (*mo
 }
 
 func (ur *UserRepositoryDdb) Create(ctx context.Context, user model.User) error {
-	id := uuid.New()
-	user.ID = id
-
 	item, err := attributevalue.MarshalMap(user)
 	if err != nil {
 		return err
 	}
 
 	_, err = ur.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(ur.tableName),
-		Item:      item,
+		TableName:                aws.String(ur.tableName),
+		Item:                     item,
+		ConditionExpression:      aws.String("attribute_not_exists(#id)"),
+		ExpressionAttributeNames: map[string]string{"#id": "id"},
 	})
 	if err != nil {
 		return err
@@ -123,13 +122,16 @@ func (ur *UserRepositoryDdb) Update(ctx context.Context, user model.User) error 
 	if err != nil {
 		return fmt.Errorf("failed to marshal user: %w", err)
 	}
+
 	_, err = ur.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName: aws.String(ur.tableName),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: user.ID.String()},
 		},
-		UpdateExpression: aws.String("SET #email = :email, #hashed_password = :hashed_password, #roles = :roles"),
+		UpdateExpression:    aws.String("SET #email=:email, #hashed_password=:hashed_password, #roles=:roles"),
+		ConditionExpression: aws.String("attribute_exists(#id)"),
 		ExpressionAttributeNames: map[string]string{
+			"#id":              "id",
 			"#email":           "email",
 			"#hashed_password": "hashed_password",
 			"#roles":           "roles",

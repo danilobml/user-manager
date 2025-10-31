@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/danilobml/user-manager/internal/config"
-	"github.com/danilobml/user-manager/internal/ddb"
+	// "github.com/danilobml/user-manager/internal/ddb"
 	"github.com/danilobml/user-manager/internal/httpx"
 	"github.com/danilobml/user-manager/internal/routes"
 	"github.com/danilobml/user-manager/internal/user/handler"
@@ -30,9 +30,11 @@ func main() {
     }
 
 	// Initializations
-	ddbClient := ddb.InitDynamo()
+	// TODO: reactivate ddbRepo when infra implemented
+	// ddbClient := ddb.InitDynamo()
 
-	userRepository := repository.NewUserRepositoryDdb(ddbClient)
+	// userRepository := repository.NewUserRepositoryDdb(ddbClient)
+	userRepository := repository.NewUserRepositoryInMemory()
 	userService := service.NewUserserviceImpl(userRepository)
 	userHandler := handler.NewUserHandler(userService)
 
