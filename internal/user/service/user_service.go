@@ -23,7 +23,7 @@ type UserService interface {
 	// admin:
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
 	UpdateUserData(ctx context.Context, checkUserReq dtos.CheckUserRequest) error
-	RemoveUser(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
+	RemoveUser(ctx context.Context, id uuid.UUID) error
 	GetUser(ctx context.Context, id uuid.UUID) (*model.User, error)
 }
 
@@ -81,6 +81,11 @@ func (us *UserServiceImpl) Login(ctx context.Context, loginReq dtos.LoginRequest
 		return dtos.LoginResponse{}, err
 	}
 
+	// Only active, registered users can login
+	if !user.IsActive {
+		return dtos.LoginResponse{}, errs.ErrInvalidCredentials
+	}
+
 	isPasswordValid := us.passwordHasher.CheckPasswordHash(loginReq.Password, user.HashedPassword)
 
 	if !isPasswordValid {
@@ -108,7 +113,8 @@ func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dto
 		return err
 	}
 
-	if !IsUserOwner(ctx, user) {
+	// Only the user themselves, or admins can unregister
+	if !IsUserOwner(ctx, user) || !IsUserAdmin(ctx) {
 		return errs.ErrUnauthorized
 	}
 
@@ -143,6 +149,7 @@ func (us *UserServiceImpl) UpdateUserData(ctx context.Context, checkUserReq dtos
 	return nil
 }
 
+// Admin only
 func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error) {
 	if !IsUserAdmin(ctx) {
 		return nil, errs.ErrUnauthorized
@@ -168,11 +175,23 @@ func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersRe
 	return respUsers, nil
 }
 
-// TODO: implement
-func (us *UserServiceImpl)	RemoveUser(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error {
+// Admin only
+func (us *UserServiceImpl) RemoveUser(ctx context.Context, id uuid.UUID) error {
+	// Only admins can remove (delete from DB) an user
+	if !IsUserAdmin(ctx) {
+		return errs.ErrUnauthorized
+	}
+
+
+	err := us.userRepository.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
+// Not exposed
 func (us *UserServiceImpl) GetUser(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	user, err := us.userRepository.FindById(ctx, id)
 	if err != nil {

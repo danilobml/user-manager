@@ -122,3 +122,22 @@ func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	helpers.WriteJSONResponse(w, http.StatusOK, users)
 }
+
+func (uh *UserHandler) RemoveUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idString := r.PathValue("id")
+	userId, err := uuid.Parse(idString)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "no valid user id supplied")
+		return
+	}
+
+	err = uh.userService.RemoveUser(ctx, userId)
+	if err != nil {
+		helpers.WriteErrorsResponse(w, err)
+		return
+	}
+
+	helpers.WriteJSONResponse(w, http.StatusNoContent, "removed")
+}

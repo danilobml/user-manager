@@ -24,6 +24,9 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.Handle("GET /users",
 		authMiddleware(http.HandlerFunc(userHandler.GetAllUsers)),
 	)
+	mux.Handle("DELETE /users/{id}/remove",
+		authMiddleware(http.HandlerFunc(userHandler.RemoveUser)),
+	)
 
 	// Global middlewares
 	use := middleware.ApplyMiddlewares(
