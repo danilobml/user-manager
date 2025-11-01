@@ -20,8 +20,11 @@ type UserService interface {
 	Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
 	CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error)
 	ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error
-	UpdateUserData(ctx context.Context, checkUserReq dtos.CheckUserRequest) error
+	// admin:
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
+	UpdateUserData(ctx context.Context, checkUserReq dtos.CheckUserRequest) error
+	RemoveUser(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
+	GetUser(ctx context.Context, id uuid.UUID) (*model.User, error)
 }
 
 type UserServiceImpl struct {
@@ -62,7 +65,7 @@ func (us *UserServiceImpl) Register(ctx context.Context, registerReq dtos.Regist
 		return dtos.RegisterResponse{}, err
 	}
 
-	jwt, err := us.jwtManager.CreateToken(user.Email, registerReq.Roles)
+	jwt, err := us.jwtManager.CreateToken(user.Email, user.Roles)
 	if err != nil {
 		return dtos.RegisterResponse{}, err
 	}
@@ -84,9 +87,7 @@ func (us *UserServiceImpl) Login(ctx context.Context, loginReq dtos.LoginRequest
 		return dtos.LoginResponse{}, errs.ErrInvalidCredentials
 	}
 
-	rolesStr := helpers.GetRoleNames(user.Roles)
-
-	jwt, err := us.jwtManager.CreateToken(user.Email, rolesStr)
+	jwt, err := us.jwtManager.CreateToken(user.Email, user.Roles)
 	if err != nil {
 		return dtos.LoginResponse{}, err
 	}
@@ -107,8 +108,19 @@ func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dto
 		return err
 	}
 
-	user.IsActive = false
-	err = us.userRepository.Update(ctx, *user)
+	if !IsUserOwner(ctx, user) {
+		return errs.ErrUnauthorized
+	}
+
+	userToUnregister := model.User{
+		ID: user.ID,
+		Email: user.Email,
+		HashedPassword: user.HashedPassword,
+		Roles: user.Roles,
+		IsActive: false,
+	}
+
+	err = us.userRepository.Update(ctx, userToUnregister)
 	if err != nil {
 		return err
 	}
@@ -132,6 +144,10 @@ func (us *UserServiceImpl) UpdateUserData(ctx context.Context, checkUserReq dtos
 }
 
 func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error) {
+	if !IsUserAdmin(ctx) {
+		return nil, errs.ErrUnauthorized
+	}
+
 	users, err := us.userRepository.List(ctx)
 	if err != nil {
 		return nil, err
@@ -144,9 +160,24 @@ func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersRe
 			ID:    user.ID,
 			Email: user.Email,
 			Roles: roleNames,
+			IsActive: user.IsActive,
 		}
 		respUsers = append(respUsers, respUser)
 	}
 
 	return respUsers, nil
+}
+
+// TODO: implement
+func (us *UserServiceImpl)	RemoveUser(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error {
+	return nil
+}
+
+func (us *UserServiceImpl) GetUser(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	user, err := us.userRepository.FindById(ctx, id)
+	if err != nil {
+		return nil, errs.ErrNotFound
+	}
+
+	return user, nil
 }

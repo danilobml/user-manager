@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/danilobml/user-manager/internal/config"
+	"github.com/danilobml/user-manager/internal/httpx/middleware"
 	// "github.com/danilobml/user-manager/internal/ddb"
 	"github.com/danilobml/user-manager/internal/httpx"
 	"github.com/danilobml/user-manager/internal/routes"
@@ -40,7 +41,9 @@ func main() {
 	userService := service.NewUserserviceImpl(userRepository, jwtManager)
 	userHandler := handler.NewUserHandler(userService)
 
-	router := routes.NewRouter(userHandler)
+	authMiddleware := middleware.Authenticate(jwtManager)
+
+	router := routes.NewRouter(userHandler, authMiddleware)
 
 	httpx.Serve(config.App.Port, &router)
 }

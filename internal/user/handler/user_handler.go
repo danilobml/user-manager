@@ -2,25 +2,24 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/danilobml/user-manager/internal/errs"
 	"github.com/danilobml/user-manager/internal/helpers"
 	"github.com/danilobml/user-manager/internal/user/dtos"
 	"github.com/danilobml/user-manager/internal/user/service"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type UserHandler struct {
-	UserService service.UserService
+	userService service.UserService
 }
 
 func NewUserHandler(userService service.UserService) *UserHandler {
 	return &UserHandler{
-		UserService: userService,
+		userService: userService,
 	}
 }
 
@@ -47,16 +46,13 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	registerReq.Password = strings.TrimSpace(registerReq.Password)
 	registerReq.Email = strings.TrimSpace(registerReq.Email)
 
-	resp, err := uh.UserService.Register(ctx, registerReq)
+	resp, err := uh.userService.Register(ctx, registerReq)
 	if err != nil {
-		if errors.Is(err, errs.ErrAlreadyExists) {
-			helpers.WriteJSONError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		helpers.WriteErrorsResponse(w, err)
+		return
 	}
 
-	helpers.WriteJsonResponse(w, http.StatusCreated, resp)
+	helpers.WriteJSONResponse(w, http.StatusCreated, resp)
 }
 
 func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -82,70 +78,47 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	loginReq.Password = strings.TrimSpace(loginReq.Password)
 	loginReq.Email = strings.TrimSpace(loginReq.Email)
 
-	resp, err := uh.UserService.Login(ctx, loginReq)
+	resp, err := uh.userService.Login(ctx, loginReq)
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
-			helpers.WriteJSONError(w, http.StatusNotFound, err.Error())
-			return
-		}
-		if errors.Is(err, errs.ErrInvalidCredentials) {
-			helpers.WriteJSONError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		helpers.WriteErrorsResponse(w, err)
+		return
 	}
 
-	helpers.WriteJsonResponse(w, http.StatusOK, resp)
+	helpers.WriteJSONResponse(w, http.StatusOK, resp)
 }
 
 func (uh *UserHandler) UnregisterUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-
-	unregisterReq := dtos.UnregisterRequest{}
-	err := json.NewDecoder(r.Body).Decode(&unregisterReq)
+	userId, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		helpers.WriteJSONError(w, http.StatusBadRequest, "no valid user id supplied")
 		return
 	}
 
-	validate := validator.New()
-	err = validate.Struct(unregisterReq)
+	user, err := uh.userService.GetUser(ctx, userId)
 	if err != nil {
-		errors := err.(validator.ValidationErrors)
-		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+		helpers.WriteErrorsResponse(w, err)
 		return
 	}
 
-	unregisterReq.Email = strings.TrimSpace(unregisterReq.Email)
-	unregisterReq.Token = strings.TrimSpace(unregisterReq.Token)
-
-	err = uh.UserService.Unregister(ctx, unregisterReq)
+	err = uh.userService.Unregister(ctx, dtos.UnregisterRequest{Email: user.Email})
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
-			helpers.WriteJSONError(w, http.StatusNotFound, err.Error())
-			return
-		}
-		if errors.Is(err, errs.ErrInvalidCredentials) {
-			helpers.WriteJSONError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		helpers.WriteErrorsResponse(w, err)
+		return
 	}
 
-	helpers.WriteJsonResponse(w, http.StatusNoContent, "unregistered")
+	helpers.WriteJSONResponse(w, http.StatusNoContent, "unregistered")
 }
 
 func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	users, err := uh.UserService.ListAllUsers(ctx)
+	users, err := uh.userService.ListAllUsers(ctx)
 	if err != nil {
-		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		helpers.WriteErrorsResponse(w, err)
+		return
 	}
 
-	helpers.WriteJsonResponse(w, http.StatusOK, users)
+	helpers.WriteJSONResponse(w, http.StatusOK, users)
 }

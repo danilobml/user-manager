@@ -17,7 +17,6 @@ type LogoutRequest struct {
 
 type UnregisterRequest struct {
 	Email string `json:"email" validate:"required,email"`
-	Token string `json:"token" validate:"required,min=1"`
 }
 
 type CheckUserRequest struct {

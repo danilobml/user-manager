@@ -21,31 +21,28 @@ func NewUserRepositoryInMemory() *UserRepositoryInMemory {
 }
 
 func (ur *UserRepositoryInMemory) List(ctx context.Context) ([]*model.User, error) {
-	var usersResp []*model.User
-	for _, user := range ur.data {
-		usersResp = append(usersResp, &user)
+	usersResp := make([]*model.User, 0, len(ur.data))
+	for i := range ur.data {
+		usersResp = append(usersResp, &ur.data[i])
 	}
-
 	return usersResp, nil
 }
 
 func (ur *UserRepositoryInMemory) FindById(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	for _, user := range ur.data {
-		if user.ID == id {
-			return &user, nil
+	for i := range ur.data {
+		if ur.data[i].ID == id {
+			return &ur.data[i], nil
 		}
 	}
-
 	return nil, errs.ErrNotFound
 }
 
 func (ur *UserRepositoryInMemory) FindByEmail(ctx context.Context, email string) (*model.User, error) {
-	for _, user := range ur.data {
-		if user.Email == email {
-			return &user, nil
+	for i := range ur.data {
+		if ur.data[i].Email == email {
+			return &ur.data[i], nil
 		}
 	}
-
 	return nil, errs.ErrNotFound
 }
 

@@ -1,16 +1,21 @@
 package jwt
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/danilobml/user-manager/internal/errs"
+	"github.com/danilobml/user-manager/internal/user/model"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type JwtManager struct {
 	SecretKey []byte
+}
+
+type Claims struct {
+	Email string
+	Roles []model.Role
+	jwt.RegisteredClaims
 }
 
 func NewJwtManager(secretKey []byte) *JwtManager {
@@ -19,36 +24,32 @@ func NewJwtManager(secretKey []byte) *JwtManager {
 	}
 }
 
-func (j *JwtManager) CreateToken(email string, roles []string) (string, error) {
-	rolesString := fmt.Sprint(strings.Join(roles, ","))
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"email": email,
-			"roles": rolesString,
-			"exp":   time.Now().Add(time.Hour * 24).Unix(),
-		})
-
-	tokenString, err := token.SignedString(j.SecretKey)
-	if err != nil {
-		return "", err
+func (j *JwtManager) CreateToken(email string, roles []model.Role) (string, error) {
+	claims := Claims{
+		Email: email,
+		Roles: roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
-	return tokenString, nil
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return t.SignedString(j.SecretKey)
 }
 
-func (j *JwtManager) VerifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+func (j *JwtManager) ParseAndValidateToken(tokenString string) (*Claims, error) {
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+	token, err := parser.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (any, error) {
 		return j.SecretKey, nil
 	})
-
 	if err != nil {
-		return err
+		return nil, errs.ErrParsingToken
 	}
 
 	if !token.Valid {
-		return errs.ErrInvalidToken
+		return nil, errs.ErrInvalidToken
 	}
 
-	return nil
+	return token.Claims.(*Claims), nil
 }
