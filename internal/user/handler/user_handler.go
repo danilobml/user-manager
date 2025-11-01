@@ -20,7 +20,7 @@ type UserHandler struct {
 
 func NewUserHandler(userService service.UserService) *UserHandler {
 	return &UserHandler{
-		UserService: userService, 
+		UserService: userService,
 	}
 }
 
@@ -57,6 +57,46 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.WriteJsonResponse(w, http.StatusCreated, resp)
+}
+
+func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	loginReq := dtos.LoginRequest{}
+	err := json.NewDecoder(r.Body).Decode(&loginReq)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(loginReq)
+	if err != nil {
+		errors := err.(validator.ValidationErrors)
+		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+		return
+	}
+
+	loginReq.Password = strings.TrimSpace(loginReq.Password)
+	loginReq.Email = strings.TrimSpace(loginReq.Email)
+
+	resp, err := uh.UserService.Login(ctx, loginReq)
+	if err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			helpers.WriteJSONError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		if errors.Is(err, errs.ErrInvalidCredentials) {
+			helpers.WriteJSONError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	helpers.WriteJsonResponse(w, http.StatusOK, resp)
 }
 
 func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {

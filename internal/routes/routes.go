@@ -13,6 +13,7 @@ func NewRouter(userHandler *handler.UserHandler) http.Handler {
 
 	mux.HandleFunc("GET /health", health)
 	mux.HandleFunc("POST /register", userHandler.Register)
+	mux.HandleFunc("POST /login", userHandler.Login)
 
 	//TODO: this will be a protected route for admins
 	mux.HandleFunc("GET /users", userHandler.GetAllUsers)

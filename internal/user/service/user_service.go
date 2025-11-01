@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/danilobml/user-manager/internal/errs"
 	"github.com/danilobml/user-manager/internal/helpers"
 	"github.com/danilobml/user-manager/internal/user/dtos"
 	"github.com/danilobml/user-manager/internal/user/jwt"
@@ -68,9 +69,28 @@ func (us *UserServiceImpl) Register(ctx context.Context, registerReq dtos.Regist
 	}, nil
 }
 
-// TODO: implement
 func (us *UserServiceImpl) Login(ctx context.Context, loginReq dtos.LoginRequest) (dtos.LoginResponse, error) {
-	return dtos.LoginResponse{}, nil
+	user, err := us.userRepository.FindByEmail(ctx, loginReq.Email)
+	if err != nil {
+		return dtos.LoginResponse{}, err
+	}
+
+	isPasswordValid := us.passwordHasher.CheckPasswordHash(loginReq.Password, user.HashedPassword)
+
+	if !isPasswordValid {
+		return dtos.LoginResponse{}, errs.ErrInvalidCredentials
+	}
+
+	rolesStr := helpers.GetRoleNames(user.Roles)
+
+	jwt, err := us.jwtManager.CreateToken(user.Email, rolesStr)
+	if err != nil {
+		return dtos.LoginResponse{}, err
+	}
+
+	return dtos.LoginResponse{
+		Token: jwt,
+	}, nil
 }
 
 // TODO: implement
