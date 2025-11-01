@@ -99,6 +99,46 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	helpers.WriteJsonResponse(w, http.StatusOK, resp)
 }
 
+func (uh *UserHandler) UnregisterUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	unregisterReq := dtos.UnregisterRequest{}
+	err := json.NewDecoder(r.Body).Decode(&unregisterReq)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(unregisterReq)
+	if err != nil {
+		errors := err.(validator.ValidationErrors)
+		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+		return
+	}
+
+	unregisterReq.Email = strings.TrimSpace(unregisterReq.Email)
+	unregisterReq.Token = strings.TrimSpace(unregisterReq.Token)
+
+	err = uh.UserService.Unregister(ctx, unregisterReq)
+	if err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			helpers.WriteJSONError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		if errors.Is(err, errs.ErrInvalidCredentials) {
+			helpers.WriteJSONError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		helpers.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	helpers.WriteJsonResponse(w, http.StatusNoContent, "unregistered")
+}
+
 func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

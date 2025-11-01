@@ -128,18 +128,20 @@ func (ur *UserRepositoryDdb) Update(ctx context.Context, user model.User) error 
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: user.ID.String()},
 		},
-		UpdateExpression:    aws.String("SET #email=:email, #hashed_password=:hashed_password, #roles=:roles"),
+		UpdateExpression:    aws.String("SET #email=:email, #hashed_password=:hashed_password, #roles=:roles, #is_active=:is_active"),
 		ConditionExpression: aws.String("attribute_exists(#id)"),
 		ExpressionAttributeNames: map[string]string{
 			"#id":              "id",
 			"#email":           "email",
 			"#hashed_password": "hashed_password",
 			"#roles":           "roles",
+			"#is_active":       "is_active",
 		},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":email":           item["email"],
 			":hashed_password": item["hashed_password"],
 			":roles":           item["roles"],
+			":is_active":       item["is_active"],
 		},
 	})
 
