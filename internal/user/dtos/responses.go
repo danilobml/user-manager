@@ -5,6 +5,7 @@ type RegisterResponse struct {
 }
 
 type LoginResponse struct {
+	Token  string `json:"token,omitempty"`
 }
 
 type LogoutResponse struct {
@@ -15,3 +16,5 @@ type UnregisterResponse struct {
 
 type CheckUserResponse struct {
 }
+
+type GetAllUsersResponse = []ResponseUser

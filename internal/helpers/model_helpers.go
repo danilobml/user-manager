@@ -14,3 +14,13 @@ func ParseRoles(names []string) ([]model.Role, error) {
 
 	return roles, nil
 }
+
+func GetRoleNames(roles []model.Role) ([]string) {
+	names := make([]string, 0, len(roles))
+	for _, role := range roles {
+		roleName := role.GetName()
+		names = append(names, roleName)
+	}
+
+	return names
+}

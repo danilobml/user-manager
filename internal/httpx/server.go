@@ -14,6 +14,6 @@ func Serve(port string, handler *http.Handler) {
 	log.Printf("server listening on port%s...", port)
 
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal("Server initialization failed")
+		log.Fatal("Server initialization failed", err)
 	}
 }
