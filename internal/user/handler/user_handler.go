@@ -87,6 +87,43 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	helpers.WriteJSONResponse(w, http.StatusOK, resp)
 }
 
+func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userId, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "no valid user id supplied")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	updateReq := dtos.UpdateUserRequest{}
+	err = json.NewDecoder(r.Body).Decode(&updateReq)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(updateReq)
+	if err != nil {
+		errors := err.(validator.ValidationErrors)
+		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+		return
+	}
+	updateReq.ID = userId
+	updateReq.Email = strings.TrimSpace(updateReq.Email)
+
+	err = uh.userService.UpdateUserData(ctx, updateReq)
+	if err != nil {
+		helpers.WriteErrorsResponse(w, err)
+		return
+	}
+
+	helpers.WriteJSONResponse(w, http.StatusOK, "updated successfully")
+}
+
 func (uh *UserHandler) UnregisterUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

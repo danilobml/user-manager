@@ -22,7 +22,7 @@ type UserService interface {
 	ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error
 	// admin:
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
-	UpdateUserData(ctx context.Context, checkUserReq dtos.CheckUserRequest) error
+	UpdateUserData(ctx context.Context, updateUserRequest dtos.UpdateUserRequest) error
 	RemoveUser(ctx context.Context, id uuid.UUID) error
 	GetUser(ctx context.Context, id uuid.UUID) (*model.User, error)
 }
@@ -114,7 +114,7 @@ func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dto
 	}
 
 	// Only the user themselves, or admins can unregister
-	if !IsUserOwner(ctx, user) || !IsUserAdmin(ctx) {
+	if !us.IsUserOwner(ctx, user.Email) && !us.IsUserAdmin(ctx) {
 		return errs.ErrUnauthorized
 	}
 
@@ -145,19 +145,51 @@ func (us *UserServiceImpl) ChangePassword(ctx context.Context, changePassRequest
 }
 
 // TODO: implement
-func (us *UserServiceImpl) UpdateUserData(ctx context.Context, checkUserReq dtos.CheckUserRequest) error {
+func (us *UserServiceImpl) UpdateUserData(ctx context.Context, updateUserRequest dtos.UpdateUserRequest) error {
+	user, err := us.userRepository.FindById(ctx, updateUserRequest.ID)
+	if err != nil {
+		return err
+	}
+
+	// Only the user themselves, or admins can update data
+	if !us.IsUserOwner(ctx, user.Email) && !us.IsUserAdmin(ctx) {
+		return errs.ErrUnauthorized
+	}
+
+	dbRoles, err := helpers.ParseRoles(updateUserRequest.Roles)
+	if err != nil {
+		return errs.ErrParsingRoles
+	}
+
+	userToUnregister := model.User{
+		ID: user.ID,
+		Email: updateUserRequest.Email,
+		HashedPassword: user.HashedPassword,
+		Roles: dbRoles,
+		IsActive: user.IsActive,
+	}
+
+	err = us.userRepository.Update(ctx, userToUnregister)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Admin only
 func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error) {
-	if !IsUserAdmin(ctx) {
-		return nil, errs.ErrUnauthorized
+	if !us.IsUserAdmin(ctx) {
+		return dtos.GetAllUsersResponse{}, errs.ErrUnauthorized
 	}
 
 	users, err := us.userRepository.List(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(users) == 0 {
+		return []dtos.ResponseUser{}, nil
 	}
 
 	var respUsers dtos.GetAllUsersResponse
@@ -178,10 +210,10 @@ func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersRe
 // Admin only
 func (us *UserServiceImpl) RemoveUser(ctx context.Context, id uuid.UUID) error {
 	// Only admins can remove (delete from DB) an user
-	if !IsUserAdmin(ctx) {
+	
+	if !us.IsUserAdmin(ctx) {
 		return errs.ErrUnauthorized
 	}
-
 
 	err := us.userRepository.Delete(ctx, id)
 	if err != nil {

@@ -4,25 +4,35 @@ import (
 	"context"
 
 	"github.com/danilobml/user-manager/internal/httpx/middleware"
-	"github.com/danilobml/user-manager/internal/user/model"
 )
 
-func IsUserOwner(ctx context.Context, user *model.User) bool {
+// Helpers
+func (us *UserServiceImpl) IsUserOwner(ctx context.Context, userEmail string) bool {
+	_, err := us.userRepository.FindByEmail(ctx, userEmail)
+	if err != nil {
+		return false
+	}
+	
 	claims, ok := middleware.GetClaimsFromContext(ctx)
 	if !ok {
 		return false
 	}
 
-	if claims.Email != user.Email {
+	if claims.Email != userEmail {
 		return false
 	}
 
 	return true
 }
 
-func IsUserAdmin(ctx context.Context) bool {
+func (us *UserServiceImpl) IsUserAdmin(ctx context.Context) bool {
 	claims, ok := middleware.GetClaimsFromContext(ctx)
 	if !ok {
+		return false
+	}
+
+	_, err := us.userRepository.FindByEmail(ctx, claims.Email)
+	if err != nil {
 		return false
 	}
 

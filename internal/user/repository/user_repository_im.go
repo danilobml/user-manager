@@ -25,6 +25,9 @@ func (ur *UserRepositoryInMemory) List(ctx context.Context) ([]*model.User, erro
 	for i := range ur.data {
 		usersResp = append(usersResp, &ur.data[i])
 	}
+	if usersResp == nil {
+		return []*model.User{}, nil
+	}
 	return usersResp, nil
 }
 
@@ -58,7 +61,7 @@ func (ur *UserRepositoryInMemory) Create(ctx context.Context, user model.User) e
 }
 
 func (ur *UserRepositoryInMemory) Update(ctx context.Context, user model.User) error {
-	existingUser, err := ur.FindByEmail(ctx, user.Email)
+	existingUser, err := ur.FindById(ctx, user.ID)
 	if err != nil {
 		return err
 	}

@@ -20,6 +20,9 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.Handle("DELETE /users/{id}",
 		authMiddleware(http.HandlerFunc(userHandler.UnregisterUser)),
 	)
+	mux.Handle("PUT /users/{id}",
+		authMiddleware(http.HandlerFunc(userHandler.UpdateUser)),
+	)
 	// Admin
 	mux.Handle("GET /users",
 		authMiddleware(http.HandlerFunc(userHandler.GetAllUsers)),
