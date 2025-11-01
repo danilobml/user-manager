@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/danilobml/user-manager/internal/httpx/middleware"
 	"github.com/danilobml/user-manager/internal/user/handler"
 )
 
@@ -18,7 +19,14 @@ func NewRouter(userHandler *handler.UserHandler) http.Handler {
 	//TODO: this will be a protected route for admins
 	mux.HandleFunc("GET /users", userHandler.GetAllUsers)
 
-	return mux
+	useMiddlewares := middleware.ApplyMiddlewares(
+		middleware.Recover,
+		middleware.Cors,
+		middleware.RequestId,
+		middleware.Logger,
+	)
+
+	return useMiddlewares(mux)
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
