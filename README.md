@@ -9,7 +9,7 @@ It supports user registration, login, password reset (SES), JWT authentication, 
 
 - **Go AWS Lambda**
 - **JWT Authentication**
-- **User Registration / Login / Deactivation**
+- **User Registration / Login / Deactivation / External user check**
 - **Role-based Access Control**
 - **Email via AWS SES for password reset**
 - **DynamoDB**
