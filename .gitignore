@@ -21,8 +21,15 @@ go.work
 # env
 .env
 
+# vscode
+.vscode
+
 # config
 config.yml
 
 # air
 tmp/
+
+# cdk
+node_modules/
+bootstrap
