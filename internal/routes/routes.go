@@ -20,6 +20,9 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.HandleFunc("POST /check-user", userHandler.CheckUser)
 
 	// Protected
+	mux.Handle("GET /users/data", 
+		authMiddleware(http.HandlerFunc(userHandler.GetUserData)),
+	)
 	mux.Handle("DELETE /users/{id}",
 		authMiddleware(http.HandlerFunc(userHandler.UnregisterUser)),
 	)

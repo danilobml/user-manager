@@ -81,6 +81,18 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	helpers.WriteJSONResponse(w, http.StatusOK, resp)
 }
 
+func (uh *UserHandler) GetUserData(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	resp, err := uh.userService.GetUserData(ctx)
+	if err != nil {
+		helpers.WriteErrorsResponse(w, err)
+		return
+	}
+
+	helpers.WriteJSONResponse(w, http.StatusOK, resp)
+}
+
 func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

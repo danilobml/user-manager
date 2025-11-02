@@ -7,6 +7,7 @@ import (
 
 	"github.com/danilobml/user-manager/internal/errs"
 	"github.com/danilobml/user-manager/internal/helpers"
+	"github.com/danilobml/user-manager/internal/httpx/middleware"
 	mailer "github.com/danilobml/user-manager/internal/mailer/model"
 	"github.com/danilobml/user-manager/internal/user/dtos"
 	"github.com/danilobml/user-manager/internal/user/jwt"
@@ -21,6 +22,7 @@ type UserService interface {
 	Register(ctx context.Context, registerReq dtos.RegisterRequest) (dtos.RegisterResponse, error)
 	Login(ctx context.Context, loginReq dtos.LoginRequest) (dtos.LoginResponse, error)
 	Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
+	GetUserData(ctx context.Context) (dtos.ResponseUser, error)
 	RequestPasswordReset(ctx context.Context, requestPassResetReq dtos.RequestPasswordResetRequest) error
 	ResetPassword(ctx context.Context, resetPassRequest dtos.ResetPasswordRequest) error
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
@@ -107,6 +109,29 @@ func (us *UserServiceImpl) Login(ctx context.Context, loginReq dtos.LoginRequest
 	return dtos.LoginResponse{
 		Token: jwt,
 	}, nil
+}
+
+func (us *UserServiceImpl) GetUserData(ctx context.Context) (dtos.ResponseUser, error) {
+	claims, ok := middleware.GetClaimsFromContext(ctx)
+	if !ok {
+		return dtos.ResponseUser{}, errs.ErrInvalidToken
+	}
+
+	user, err := us.userRepository.FindByEmail(ctx, claims.Email)
+	if err != nil {
+		return dtos.ResponseUser{}, errs.ErrNotFound
+	}
+
+	roleNames := helpers.GetRoleNames(user.Roles)
+
+	respUser := dtos.ResponseUser{
+		ID: user.ID,
+		Email: user.Email,
+		Roles: roleNames,
+		IsActive: user.IsActive,
+	}
+
+	return respUser, nil
 }
 
 func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error {
