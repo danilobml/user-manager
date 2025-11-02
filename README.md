@@ -36,7 +36,7 @@ user-manager/
 │   ├── ddb/                  # DynamoDB client
 │   ├── errs/                 # Custom error definitions
 │   ├── httpx/                # Server start, Middleware (logger, auth, recover)
-│   ├── mailer/               # SES + Mock mailer
+│   ├── mailer/               # SES + Local (SMTP) mailer services
 │   ├── mocks/                # Mock mailer for tests
 │   ├── routes/               # Route setup with auth
 │   ├── ses/                  # SES initialization and client
