@@ -95,32 +95,123 @@ make deploy
 
 ---
 
-## Example API Requests
+## API calls
 
-### Health check
+> All requests use `Content-Type: application/json`.  
+> **Protected** routes require `Authorization: Bearer <JWT_TOKEN>`.  
+> **External check** (`/check-user`) requires `User-Api-Key: <your-api-key>`.
+
+### Public
+
+#### GET `/health`
+Health probe.
 ```bash
-curl https://<api-url>/health
+curl -s https://<api-url>/health
 ```
 
-### Register
+#### POST `/register`
+Create user.
 ```bash
-curl -X POST https://<api-url>/register   -H "Content-Type: application/json"   -d '{"email":"user@example.com","password":"StrongP@ssw0rd12345","roles":["user"]}'
+curl -X POST https://<api-url>/register   -H "Content-Type: application/json"   -d '{
+    "email": "user@example.com",
+    "password": "StrongP@ssw0rd12345",
+    "roles": ["user"]
+  }'
+# 201 Created -> { "token": "<jwt>" }  (if you return token on register)
 ```
 
-### Login
+#### POST `/login`
+Authenticate and get JWT.
 ```bash
-curl -X POST https://<api-url>/login   -H "Content-Type: application/json"   -d '{"email":"user@example.com","password":"StrongP@ssw0rd12345"}'
+curl -X POST https://<api-url>/login   -H "Content-Type: application/json"   -d '{
+    "email": "user@example.com",
+    "password": "StrongP@ssw0rd12345"
+  }'
+# 200 OK -> { "token": "<jwt>" }
 ```
 
-### Get User Data
+#### POST `/request-password`
+Request a password reset email.
 ```bash
-curl -H "Authorization: Bearer <JWT_TOKEN>" https://<api-url>/users/data
+curl -X POST https://<api-url>/request-password   -H "Content-Type: application/json"   -d '{ "email": "user@example.com" }'
+# 204 No Content
 ```
 
-### Admin List All Users
+#### PUT `/users/reset-password`
+Complete password reset (uses emailed token).
 ```bash
-curl -H "Authorization: Bearer <ADMIN_JWT>" https://<api-url>/users
+curl -X PUT https://<api-url>/users/reset-password   -H "Content-Type: application/json"   -d '{
+    "email": "user@example.com",
+    "password": "NewStrongP@ssw0rd123",
+    "reset_token": "<token-from-email>"
+  }'
+# 204 No Content
 ```
+
+#### POST `/check-user`  _(External validation — requires API key)_
+Validate a user token for external services.
+```bash
+curl -X POST https://<api-url>/check-user   -H "Content-Type: application/json"   -H "User-Api-Key: <your-api-key>"   -d '{ "token": "<jwt-from-your-app>" }'
+# 200 OK -> { "is_valid": true, "user": { ... } }
+```
+
+---
+
+### Protected (JWT required)
+
+#### GET `/users/data`
+Return the currently authenticated user.
+```bash
+curl https://<api-url>/users/data   -H "Authorization: Bearer <JWT_TOKEN>"
+# 200 OK -> { "id": "...", "email": "...", "roles": ["user"], "is_active": true }
+```
+
+#### PUT `/users/{id}`
+Update user email/roles (self or admin).
+```bash
+curl -X PUT https://<api-url>/users/<UUID>   -H "Authorization: Bearer <JWT_TOKEN>"   -H "Content-Type: application/json"   -d '{
+    "email": "new@example.com",
+    "roles": ["user","admin"]
+  }'
+# 200 OK -> "updated successfully"
+```
+
+#### DELETE `/users/{id}`
+Soft-unregister a user (self or admin).
+```bash
+curl -X DELETE https://<api-url>/users/<UUID>   -H "Authorization: Bearer <JWT_TOKEN>"
+# 204 No Content
+```
+
+---
+
+### Admin (JWT for an `admin` user)
+
+#### GET `/users`
+List all users.
+```bash
+curl https://<api-url>/users   -H "Authorization: Bearer <ADMIN_JWT>"
+# 200 OK -> [ { "id": "...", "email": "...", "roles": ["user"], "is_active": true }, ... ]
+```
+
+#### DELETE `/users/{id}/remove`
+Hard delete a user from DB.
+```bash
+curl -X DELETE https://<api-url>/users/<UUID>/remove   -H "Authorization: Bearer <ADMIN_JWT>"
+# 204 No Content
+```
+
+### Request/Response shapes (summary)
+
+- **RegisterRequest**: `{ "email": string, "password": string, "roles": string[] }`
+- **RegisterResponse**: `{ "token": string }` (if returned)
+- **LoginRequest**: `{ "email": string, "password": string }`
+- **LoginResponse**: `{ "token": string }`
+- **RequestPasswordResetRequest**: `{ "email": string }`
+- **ResetPasswordRequest**: `{ "email": string, "password": string, "reset_token": string }`
+- **UpdateUserRequest**: `{ "email": string, "roles": string[] }`
+- **CheckUserRequest**: `{ "token": string }`
+- **CheckUserResponse**: `{ "is_valid": boolean, "user"?: {...} }`
 
 ---
 
