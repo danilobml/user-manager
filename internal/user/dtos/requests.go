@@ -15,14 +15,12 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required,min=6,max=20"`
 }
 
-type LogoutRequest struct {
-}
-
 type UnregisterRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
 type CheckUserRequest struct {
+	Token string `json:"token"`
 }
 
 type UpdateUserRequest struct {
@@ -31,11 +29,12 @@ type UpdateUserRequest struct {
 	Roles []string  `json:"roles" validate:"omitempty,dive,oneof=user admin"`
 }
 
-type ChangePasswordRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6,max=20"`
+type RequestPasswordResetRequest struct {
+	Email string `json:"email" validate:"required,email"`
 }
 
-type RequestPasswordChangeRequest struct {
-	Email string `json:"email" validate:"required,email"`
+type ResetPasswordRequest struct {
+	Email      string `json:"email" validate:"required,email"`
+	Password   string `json:"password" validate:"required,min=6,max=20"`
+	ResetToken string `json:"token,omitempty"`
 }

@@ -15,3 +15,5 @@ var ErrParsingToken = errors.New("could not parse user token")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
 var ErrUnauthorized = errors.New("unauthorized")
+
+var ErrMailServiceDisabled = errors.New("one or more email config variables are missing")

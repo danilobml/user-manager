@@ -8,10 +8,8 @@ type LoginResponse struct {
 	Token string `json:"token,omitempty"`
 }
 
-type LogoutResponse struct {
-}
-
 type CheckUserResponse struct {
+	IsValid bool `json:"is_valid"`
 }
 
 type GetAllUsersResponse = []ResponseUser

@@ -15,6 +15,7 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.HandleFunc("GET /health", health)
 	mux.HandleFunc("POST /register", userHandler.Register)
 	mux.HandleFunc("POST /login", userHandler.Login)
+	mux.HandleFunc("POST /request-password", userHandler.RequestPasswordReset)
 
 	// Protected
 	mux.Handle("DELETE /users/{id}",
@@ -23,8 +24,8 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.Handle("PUT /users/{id}",
 		authMiddleware(http.HandlerFunc(userHandler.UpdateUser)),
 	)
-	mux.Handle("PUT /users/change-password",
-		authMiddleware(http.HandlerFunc(userHandler.ChangePassword)),
+	mux.Handle("PUT /users/reset-password",
+		authMiddleware(http.HandlerFunc(userHandler.ResetPassword)),
 	)
 	// Admin
 	mux.Handle("GET /users",

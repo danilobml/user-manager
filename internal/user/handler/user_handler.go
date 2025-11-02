@@ -137,31 +137,57 @@ func (uh *UserHandler) UnregisterUser(w http.ResponseWriter, r *http.Request) {
 	helpers.WriteJSONResponse(w, http.StatusNoContent, "unregistered")
 }
 
-func (uh *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
-	changePassReq := dtos.ChangePasswordRequest{}
-	err := json.NewDecoder(r.Body).Decode(&changePassReq)
+	requestPassResetReq := dtos.RequestPasswordResetRequest{}
+	err := json.NewDecoder(r.Body).Decode(&requestPassResetReq)
 	if err != nil {
 		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
 		return
 	}
 
-	if !uh.isInputValid(w, changePassReq) {
+	if !uh.isInputValid(w, requestPassResetReq) {
 		return
 	}
 
-	changePassReq.Password = strings.TrimSpace(changePassReq.Password)
-	changePassReq.Email = strings.TrimSpace(changePassReq.Email)
+	requestPassResetReq.Email = strings.TrimSpace(requestPassResetReq.Email)
 
-	err = uh.userService.ChangePassword(ctx, changePassReq)
+	err = uh.userService.RequestPasswordReset(ctx, requestPassResetReq)
 	if err != nil {
 		helpers.WriteErrorsResponse(w, err)
 		return
 	}
 
-	helpers.WriteJSONResponse(w, http.StatusOK, "password successfully changed")
+	helpers.WriteJSONResponse(w, http.StatusNoContent,"")
+}
+
+func (uh *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	resetPassReq := dtos.ResetPasswordRequest{}
+	err := json.NewDecoder(r.Body).Decode(&resetPassReq)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	if !uh.isInputValid(w, resetPassReq) {
+		return
+	}
+
+	resetPassReq.Password = strings.TrimSpace(resetPassReq.Password)
+	resetPassReq.Email = strings.TrimSpace(resetPassReq.Email)
+
+	err = uh.userService.ResetPassword(ctx, resetPassReq)
+	if err != nil {
+		helpers.WriteErrorsResponse(w, err)
+		return
+	}
+
+	helpers.WriteJSONResponse(w, http.StatusNoContent, "")
 }
 
 func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {

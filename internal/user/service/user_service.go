@@ -2,26 +2,28 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"github.com/danilobml/user-manager/internal/errs"
 	"github.com/danilobml/user-manager/internal/helpers"
+	mailer "github.com/danilobml/user-manager/internal/mailer/model"
 	"github.com/danilobml/user-manager/internal/user/dtos"
 	"github.com/danilobml/user-manager/internal/user/jwt"
 	"github.com/danilobml/user-manager/internal/user/model"
 	passwordhasher "github.com/danilobml/user-manager/internal/user/password_hasher"
 	"github.com/danilobml/user-manager/internal/user/repository"
+
 	"github.com/google/uuid"
 )
 
 type UserService interface {
 	Register(ctx context.Context, registerReq dtos.RegisterRequest) (dtos.RegisterResponse, error)
 	Login(ctx context.Context, loginReq dtos.LoginRequest) (dtos.LoginResponse, error)
-	Logout(ctx context.Context, logoutReq dtos.LogoutRequest) (dtos.LogoutResponse, error)
 	Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
 	CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error)
-	RequestPasswordChange(ctx context.Context, requestPasswordChangeReq dtos.RequestPasswordChangeRequest) error
-	ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error
-	// admin:
+	RequestPasswordReset(ctx context.Context, requestPassResetReq dtos.RequestPasswordResetRequest) error
+	ResetPassword(ctx context.Context, resetPassRequest dtos.ResetPasswordRequest) error
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
 	UpdateUserData(ctx context.Context, updateUserRequest dtos.UpdateUserRequest) error
 	RemoveUser(ctx context.Context, id uuid.UUID) error
@@ -32,13 +34,17 @@ type UserServiceImpl struct {
 	userRepository repository.UserRepository
 	jwtManager     *jwt.JwtManager
 	passwordHasher passwordhasher.PasswordHasher
+	emailService   mailer.Mailer
+	baseUrl        string
 }
 
-func NewUserserviceImpl(userRepository repository.UserRepository, jwtManager *jwt.JwtManager) *UserServiceImpl {
+func NewUserserviceImpl(userRepository repository.UserRepository, jwtManager *jwt.JwtManager, emailService mailer.Mailer, baseUrl string) *UserServiceImpl {
 	return &UserServiceImpl{
 		userRepository: userRepository,
 		jwtManager:     jwtManager,
 		passwordHasher: passwordhasher.NewPasswordHasher(),
+		emailService:   emailService,
+		baseUrl:        baseUrl,
 	}
 }
 
@@ -103,11 +109,6 @@ func (us *UserServiceImpl) Login(ctx context.Context, loginReq dtos.LoginRequest
 	}, nil
 }
 
-// TODO: implement
-func (us *UserServiceImpl) Logout(ctx context.Context, logoutReq dtos.LogoutRequest) (dtos.LogoutResponse, error) {
-	return dtos.LogoutResponse{}, nil
-}
-
 func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error {
 	user, err := us.userRepository.FindByEmail(ctx, unregisterRequest.Email)
 	if err != nil {
@@ -140,15 +141,41 @@ func (us *UserServiceImpl) CheckUser(ctx context.Context, checkUserReq dtos.Chec
 	return dtos.CheckUserResponse{}, nil
 }
 
-// TODO: implement
-func (us *UserServiceImpl) RequestPasswordChange(ctx context.Context, requestPasswordChangeReq dtos.RequestPasswordChangeRequest) error {
+func (us *UserServiceImpl) RequestPasswordReset(ctx context.Context, requestPassResetReq dtos.RequestPasswordResetRequest) error {
+	user, err := us.userRepository.FindByEmail(ctx, requestPassResetReq.Email)
+	if err != nil {
+		log.Println("Error sending email: ", err)
+		return nil
+	}
+
+	token, err := us.jwtManager.CreateResetToken(user.ID.String())
+	if err != nil {
+		log.Println("Error sending email: ", err)
+		return err
+	}
+
+	link := fmt.Sprintf("%s/change-password?token=%s", us.baseUrl, token)
+	subject := "Password Reset Request"
+	body := fmt.Sprintf("Click the link below to reset your password:\r\n\r\n%s\r\n\r\nThis link expires in 15 minutes.", link)
+
+	us.emailService.SendMail([]string{user.Email}, subject, body)
+
 	return nil
 }
 
-func (us *UserServiceImpl) ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error {
-	user, err := us.userRepository.FindByEmail(ctx, changePassRequest.Email)
+func (us *UserServiceImpl) ResetPassword(ctx context.Context, resetPassRequest dtos.ResetPasswordRequest) error {
+	userID, err := us.jwtManager.VerifyResetToken(resetPassRequest.ResetToken)
 	if err != nil {
-		return err
+		return errs.ErrInvalidToken
+	}
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return errs.ErrInvalidToken
+	}
+
+	user, err := us.userRepository.FindById(ctx, uid)
+	if err != nil {
+		return errs.ErrInvalidToken
 	}
 
 	// Only the user themselves can change password
@@ -156,7 +183,7 @@ func (us *UserServiceImpl) ChangePassword(ctx context.Context, changePassRequest
 		return errs.ErrUnauthorized
 	}
 
-	newHashedPassword, err := us.passwordHasher.HashPassword(changePassRequest.Password)
+	newHashedPassword, err := us.passwordHasher.HashPassword(resetPassRequest.Password)
 	if err != nil {
 		return err
 	}
