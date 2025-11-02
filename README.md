@@ -32,14 +32,14 @@ user-manager/
 │   └── lib/
 │       └── user-manager-stack.ts
 ├── internal/
-│   ├── config/               # App config (env vars, SSM params)
+│   ├── config/               # App config
 │   ├── ddb/                  # DynamoDB client
-│   ├── errs/                 # Central error definitions
-│   ├── httpx/                # Middleware (logger, auth, recover)
+│   ├── errs/                 # Custom error definitions
+│   ├── httpx/                # Server start, Middleware (logger, auth, recover)
 │   ├── mailer/               # SES + Mock mailer
 │   ├── mocks/                # Mock mailer for tests
 │   ├── routes/               # Route setup with auth
-│   ├── ses/                  # SES initialization
+│   ├── ses/                  # SES initialization and client
 │   └── user/
 │       ├── dtos/             # Request/Response DTOs
 │       ├── handler/          # HTTP handlers
@@ -62,9 +62,8 @@ make run_dev
 This runs the Lambda locally using Go’s native HTTP server on  `http://localhost:8080`, using Air for hot reload.
 
 ### 2. Run Tests
-All routes and handlers have integrated `httptest` coverage, including negative cases.
 ```bash
-go test ./internal/test -v
+make test
 ```
 
 ---
@@ -79,11 +78,10 @@ go test ./internal/test -v
   npm install -g aws-cdk
   ```
 - AWS SES email verified (`MAIL_FROM_EMAIL`)
-- Parameters in AWS Systems Manager (SSM):
-  ```
-  /user-manager/app/jwt-secret
+- set Parameters in AWS Systems Manager (SSM):
+  
+  /user-manager/app/jwt-secret (base 64 64-bit string - can be generated in a terminal `openssl rand -base64 64`)
   /user-manager/app/api-key
-  ```
 
 ### Build Lambda binary
 ```bash
@@ -95,20 +93,11 @@ make bootstrap
 make deploy
 ```
 
-If you see:
-```
-ValidationError: Cannot retrieve value from context provider ssm
-```
-add this in your `bin/user-manager.ts`:
-```ts
-env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION }
-```
-
 ---
 
 ## Example API Requests
 
-### Health
+### Health check
 ```bash
 curl https://<api-url>/health
 ```
