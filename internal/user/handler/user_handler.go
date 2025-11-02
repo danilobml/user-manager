@@ -35,11 +35,7 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validate := validator.New()
-	err = validate.Struct(registerReq)
-	if err != nil {
-		errors := err.(validator.ValidationErrors)
-		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+	if !uh.isInputValid(w, registerReq) {
 		return
 	}
 
@@ -67,11 +63,7 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validate := validator.New()
-	err = validate.Struct(loginReq)
-	if err != nil {
-		errors := err.(validator.ValidationErrors)
-		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+	if !uh.isInputValid(w, loginReq) {
 		return
 	}
 
@@ -105,13 +97,10 @@ func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validate := validator.New()
-	err = validate.Struct(updateReq)
-	if err != nil {
-		errors := err.(validator.ValidationErrors)
-		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+	if !uh.isInputValid(w, updateReq) {
 		return
 	}
+
 	updateReq.ID = userId
 	updateReq.Email = strings.TrimSpace(updateReq.Email)
 
@@ -148,6 +137,33 @@ func (uh *UserHandler) UnregisterUser(w http.ResponseWriter, r *http.Request) {
 	helpers.WriteJSONResponse(w, http.StatusNoContent, "unregistered")
 }
 
+func (uh *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	changePassReq := dtos.ChangePasswordRequest{}
+	err := json.NewDecoder(r.Body).Decode(&changePassReq)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	if !uh.isInputValid(w, changePassReq) {
+		return
+	}
+
+	changePassReq.Password = strings.TrimSpace(changePassReq.Password)
+	changePassReq.Email = strings.TrimSpace(changePassReq.Email)
+
+	err = uh.userService.ChangePassword(ctx, changePassReq)
+	if err != nil {
+		helpers.WriteErrorsResponse(w, err)
+		return
+	}
+
+	helpers.WriteJSONResponse(w, http.StatusOK, "password successfully changed")
+}
+
 func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -177,4 +193,17 @@ func (uh *UserHandler) RemoveUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.WriteJSONResponse(w, http.StatusNoContent, "removed")
+}
+
+// Validation Helper:
+func (uh *UserHandler) isInputValid(w http.ResponseWriter, structToValidate any) bool {
+	validate := validator.New()
+	err := validate.Struct(structToValidate)
+	if err != nil {
+		errors := err.(validator.ValidationErrors)
+		helpers.WriteJSONError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %s", errors))
+		return false
+	}
+
+	return true
 }

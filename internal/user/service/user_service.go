@@ -19,6 +19,7 @@ type UserService interface {
 	Logout(ctx context.Context, logoutReq dtos.LogoutRequest) (dtos.LogoutResponse, error)
 	Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
 	CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error)
+	RequestPasswordChange(ctx context.Context, requestPasswordChangeReq dtos.RequestPasswordChangeRequest) error
 	ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error
 	// admin:
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
@@ -140,11 +141,42 @@ func (us *UserServiceImpl) CheckUser(ctx context.Context, checkUserReq dtos.Chec
 }
 
 // TODO: implement
-func (us *UserServiceImpl) ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error {
+func (us *UserServiceImpl)RequestPasswordChange(ctx context.Context, requestPasswordChangeReq dtos.RequestPasswordChangeRequest) error {
 	return nil
 }
 
-// TODO: implement
+func (us *UserServiceImpl) ChangePassword(ctx context.Context, changePassRequest dtos.ChangePasswordRequest) error {
+	user, err := us.userRepository.FindByEmail(ctx, changePassRequest.Email)
+	if err != nil {
+		return err
+	}
+
+	// Only the user themselves can change password
+	if !us.IsUserOwner(ctx, user.Email) {
+		return errs.ErrUnauthorized
+	}
+
+	newHashedPassword, err := us.passwordHasher.HashPassword(changePassRequest.Password)
+	if err != nil {
+		return err
+	}
+
+	userWithNewPassword := model.User{
+		ID: user.ID,
+		Email: user.Email,
+		HashedPassword: newHashedPassword,
+		Roles: user.Roles,
+		IsActive: user.IsActive,
+	}
+
+	err = us.userRepository.Update(ctx, userWithNewPassword)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (us *UserServiceImpl) UpdateUserData(ctx context.Context, updateUserRequest dtos.UpdateUserRequest) error {
 	user, err := us.userRepository.FindById(ctx, updateUserRequest.ID)
 	if err != nil {
@@ -210,7 +242,6 @@ func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersRe
 // Admin only
 func (us *UserServiceImpl) RemoveUser(ctx context.Context, id uuid.UUID) error {
 	// Only admins can remove (delete from DB) an user
-	
 	if !us.IsUserAdmin(ctx) {
 		return errs.ErrUnauthorized
 	}

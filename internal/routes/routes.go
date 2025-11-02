@@ -23,6 +23,9 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.Handle("PUT /users/{id}",
 		authMiddleware(http.HandlerFunc(userHandler.UpdateUser)),
 	)
+	mux.Handle("PUT /users/change-password",
+		authMiddleware(http.HandlerFunc(userHandler.ChangePassword)),
+	)
 	// Admin
 	mux.Handle("GET /users",
 		authMiddleware(http.HandlerFunc(userHandler.GetAllUsers)),
