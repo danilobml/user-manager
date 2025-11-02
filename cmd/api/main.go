@@ -1,8 +1,11 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/danilobml/user-manager/internal/config"
 	"github.com/danilobml/user-manager/internal/httpx/middleware"
+
 	//"github.com/danilobml/user-manager/internal/ses"
 	// "github.com/danilobml/user-manager/internal/ddb"
 	"github.com/danilobml/user-manager/internal/httpx"
@@ -37,7 +40,7 @@ func main() {
 	})
 
 	userService := user_service.NewUserserviceImpl(userRepository, jwtManager, mailService, config.App.BaseUrl)
-	userHandler := user_handler.NewUserHandler(userService)
+	userHandler := user_handler.NewUserHandler(userService, strings.TrimSpace(config.App.ApiKey))
 
 	authMiddleware := middleware.Authenticate(jwtManager)
 

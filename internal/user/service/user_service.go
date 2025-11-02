@@ -21,13 +21,13 @@ type UserService interface {
 	Register(ctx context.Context, registerReq dtos.RegisterRequest) (dtos.RegisterResponse, error)
 	Login(ctx context.Context, loginReq dtos.LoginRequest) (dtos.LoginResponse, error)
 	Unregister(ctx context.Context, unregisterRequest dtos.UnregisterRequest) error
-	CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error)
 	RequestPasswordReset(ctx context.Context, requestPassResetReq dtos.RequestPasswordResetRequest) error
 	ResetPassword(ctx context.Context, resetPassRequest dtos.ResetPasswordRequest) error
 	ListAllUsers(ctx context.Context) (dtos.GetAllUsersResponse, error)
 	UpdateUserData(ctx context.Context, updateUserRequest dtos.UpdateUserRequest) error
 	RemoveUser(ctx context.Context, id uuid.UUID) error
 	GetUser(ctx context.Context, id uuid.UUID) (*model.User, error)
+	CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error)
 }
 
 type UserServiceImpl struct {
@@ -134,11 +134,6 @@ func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dto
 	}
 
 	return nil
-}
-
-// TODO: implement
-func (us *UserServiceImpl) CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error) {
-	return dtos.CheckUserResponse{}, nil
 }
 
 func (us *UserServiceImpl) RequestPasswordReset(ctx context.Context, requestPassResetReq dtos.RequestPasswordResetRequest) error {
@@ -279,6 +274,35 @@ func (us *UserServiceImpl) RemoveUser(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// For external services:
+func (us *UserServiceImpl) CheckUser(ctx context.Context, checkUserReq dtos.CheckUserRequest) (dtos.CheckUserResponse, error) {
+	claims, err := us.jwtManager.ParseAndValidateToken(checkUserReq.Token)
+	if err != nil {
+		return dtos.CheckUserResponse{
+			IsValid: false,
+		}, err
+	}
+
+	user, err := us.userRepository.FindByEmail(ctx, claims.Email)
+	if err != nil {
+		return dtos.CheckUserResponse{
+			IsValid: false,
+		}, err
+	}
+
+	if !user.IsActive {
+		return dtos.CheckUserResponse{
+			IsValid: false,
+			User:    *user,
+		}, nil
+	}
+
+	return dtos.CheckUserResponse{
+		IsValid: true,
+		User:    *user,
+	}, nil
 }
 
 // Not exposed

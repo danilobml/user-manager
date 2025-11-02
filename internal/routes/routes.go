@@ -17,6 +17,8 @@ func NewRouter(userHandler *handler.UserHandler, authMiddleware middleware.Middl
 	mux.HandleFunc("POST /login", userHandler.Login)
 	mux.HandleFunc("POST /request-password", userHandler.RequestPasswordReset)
 
+	mux.HandleFunc("POST /check-user", userHandler.CheckUser)
+
 	// Protected
 	mux.Handle("DELETE /users/{id}",
 		authMiddleware(http.HandlerFunc(userHandler.UnregisterUser)),

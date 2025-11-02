@@ -20,7 +20,7 @@ type UnregisterRequest struct {
 }
 
 type CheckUserRequest struct {
-	Token string `json:"token"`
+	Token  string `json:"token" validate:"required"`
 }
 
 type UpdateUserRequest struct {

@@ -15,11 +15,13 @@ import (
 
 type UserHandler struct {
 	userService service.UserService
+	apiKey      string
 }
 
-func NewUserHandler(userService service.UserService) *UserHandler {
+func NewUserHandler(userService service.UserService, apiKey string) *UserHandler {
 	return &UserHandler{
 		userService: userService,
+		apiKey:      apiKey,
 	}
 }
 
@@ -160,7 +162,7 @@ func (uh *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	helpers.WriteJSONResponse(w, http.StatusNoContent,"")
+	helpers.WriteJSONResponse(w, http.StatusNoContent, "")
 }
 
 func (uh *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +221,37 @@ func (uh *UserHandler) RemoveUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.WriteJSONResponse(w, http.StatusNoContent, "removed")
+}
+
+func (uh *UserHandler) CheckUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	apiKey := strings.TrimSpace(r.Header.Get("User-Api-Key"))
+	if apiKey != uh.apiKey {
+		helpers.WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	checkUserReq := dtos.CheckUserRequest{}
+	err := json.NewDecoder(r.Body).Decode(&checkUserReq)
+	if err != nil {
+		helpers.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	if !uh.isInputValid(w, checkUserReq) {
+		return
+	}
+
+	resp, err := uh.userService.CheckUser(ctx, checkUserReq)
+	if err != nil {
+		helpers.WriteErrorsResponse(w, err)
+		return
+	}
+
+	helpers.WriteJSONResponse(w, http.StatusOK, resp)
 }
 
 // Validation Helper:

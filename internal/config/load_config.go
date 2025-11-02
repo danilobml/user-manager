@@ -16,6 +16,7 @@ func LoadConfig() AppConfig {
 	}
 	viper.AutomaticEnv()
 	_ = viper.BindEnv("app.base_url", "BASE_URL")
+	_ = viper.BindEnv("app.api_key", "API_KEY")
 	_ = viper.BindEnv("mail.from_email", "FROM_EMAIL")
 	_ = viper.BindEnv("mail.from_email_password", "FROM_EMAIL_PASSWORD")
 	_ = viper.BindEnv("mail.from_email_smtp", "FROM_EMAIL_SMTP")
