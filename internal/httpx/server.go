@@ -12,7 +12,7 @@ import (
 
 func Serve(port string, handler *http.Handler) {
 	srv := http.Server{
-		Addr: port,
+		Addr:    port,
 		Handler: *handler,
 	}
 

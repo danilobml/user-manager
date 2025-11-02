@@ -27,9 +27,8 @@ func WriteJSONResponse(w http.ResponseWriter, status int, data any) {
 	json.NewEncoder(w).Encode(data)
 }
 
-
 func WriteErrorsResponse(w http.ResponseWriter, err error) {
-		if err != nil {
+	if err != nil {
 		if errors.Is(err, errs.ErrNotFound) {
 			WriteJSONError(w, http.StatusNotFound, err.Error())
 			return

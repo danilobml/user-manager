@@ -120,11 +120,11 @@ func (us *UserServiceImpl) Unregister(ctx context.Context, unregisterRequest dto
 	}
 
 	userToUnregister := model.User{
-		ID: user.ID,
-		Email: user.Email,
+		ID:             user.ID,
+		Email:          user.Email,
 		HashedPassword: user.HashedPassword,
-		Roles: user.Roles,
-		IsActive: false,
+		Roles:          user.Roles,
+		IsActive:       false,
 	}
 
 	err = us.userRepository.Update(ctx, userToUnregister)
@@ -141,7 +141,7 @@ func (us *UserServiceImpl) CheckUser(ctx context.Context, checkUserReq dtos.Chec
 }
 
 // TODO: implement
-func (us *UserServiceImpl)RequestPasswordChange(ctx context.Context, requestPasswordChangeReq dtos.RequestPasswordChangeRequest) error {
+func (us *UserServiceImpl) RequestPasswordChange(ctx context.Context, requestPasswordChangeReq dtos.RequestPasswordChangeRequest) error {
 	return nil
 }
 
@@ -162,11 +162,11 @@ func (us *UserServiceImpl) ChangePassword(ctx context.Context, changePassRequest
 	}
 
 	userWithNewPassword := model.User{
-		ID: user.ID,
-		Email: user.Email,
+		ID:             user.ID,
+		Email:          user.Email,
 		HashedPassword: newHashedPassword,
-		Roles: user.Roles,
-		IsActive: user.IsActive,
+		Roles:          user.Roles,
+		IsActive:       user.IsActive,
 	}
 
 	err = us.userRepository.Update(ctx, userWithNewPassword)
@@ -194,11 +194,11 @@ func (us *UserServiceImpl) UpdateUserData(ctx context.Context, updateUserRequest
 	}
 
 	userToUnregister := model.User{
-		ID: user.ID,
-		Email: updateUserRequest.Email,
+		ID:             user.ID,
+		Email:          updateUserRequest.Email,
 		HashedPassword: user.HashedPassword,
-		Roles: dbRoles,
-		IsActive: user.IsActive,
+		Roles:          dbRoles,
+		IsActive:       user.IsActive,
 	}
 
 	err = us.userRepository.Update(ctx, userToUnregister)
@@ -228,9 +228,9 @@ func (us *UserServiceImpl) ListAllUsers(ctx context.Context) (dtos.GetAllUsersRe
 	for _, user := range users {
 		roleNames := helpers.GetRoleNames(user.Roles)
 		respUser := dtos.ResponseUser{
-			ID:    user.ID,
-			Email: user.Email,
-			Roles: roleNames,
+			ID:       user.ID,
+			Email:    user.Email,
+			Roles:    roleNames,
 			IsActive: user.IsActive,
 		}
 		respUsers = append(respUsers, respUser)

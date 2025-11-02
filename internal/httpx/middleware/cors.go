@@ -1,12 +1,11 @@
 package middleware
 
 import (
-	"slices"
 	"net/http"
+	"slices"
 
 	"github.com/rs/cors"
 )
-
 
 func Cors(mux http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +17,7 @@ func Cors(mux http.Handler) http.Handler {
 			http.Error(w, "CORS origin denied", http.StatusForbidden)
 			return
 		}
-		
+
 		c := cors.New(cors.Options{
 			AllowedOrigins:   allowedOrigins,
 			AllowedMethods:   []string{"GET", "POST", "OPTIONS"},

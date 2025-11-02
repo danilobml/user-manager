@@ -12,7 +12,7 @@ func (us *UserServiceImpl) IsUserOwner(ctx context.Context, userEmail string) bo
 	if err != nil {
 		return false
 	}
-	
+
 	claims, ok := middleware.GetClaimsFromContext(ctx)
 	if !ok {
 		return false

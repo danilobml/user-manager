@@ -15,7 +15,7 @@ func ParseRoles(names []string) ([]model.Role, error) {
 	return roles, nil
 }
 
-func GetRoleNames(roles []model.Role) ([]string) {
+func GetRoleNames(roles []model.Role) []string {
 	names := make([]string, 0, len(roles))
 	for _, role := range roles {
 		roleName := role.GetName()

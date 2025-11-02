@@ -11,7 +11,7 @@ func RequestId(next http.Handler) http.Handler {
 		id := uuid.New().String()
 
 		if r.Header.Get("X-Request-ID") == "" {
-			r.Header.Add("X-Request-ID", id)		
+			r.Header.Add("X-Request-ID", id)
 		}
 
 		next.ServeHTTP(w, r)
