@@ -7,16 +7,15 @@ It supports user registration, login, password reset (SES), JWT authentication, 
 
 ## Features
 
+- **Go AWS Lambda**
 - **JWT Authentication**
 - **User Registration / Login / Deactivation**
 - **Role-based Access Control**
-- **Password Reset via AWS SES**
-- **DynamoDB Persistence**
-- **HTTP API Gateway v2 Integration**
-- **Go AWS Lambda runtime (AL2023)**
+- **Email via AWS SES for password reset**
+- **DynamoDB**
+- **API Gateway**
 - **CDK Infrastructure-as-Code**
 - **In-memory + DynamoDB repositories**
-- **Comprehensive route and handler tests**
 
 ---
 
@@ -51,22 +50,6 @@ user-manager/
 │       └── password_hasher/  # Password hashing utility
 └── internal/test/            # Integration tests (httptest)
 ```
-
----
-
-## 🧰 Tech Stack
-
-| Category | Tools / Services |
-|-----------|------------------|
-| **Language** | Go (Golang 1.24+) using native http server |
-| **Validation** | [`go-playground/validator`](https://github.com/go-playground/validator) for request validation |
-| **Live Reload** | [`Air`](https://github.com/cosmtrek/air) for hot reloading during development |
-| **Authentication** | Custom JWT using [`github.com/golang-jwt/jwt/v5`](https://github.com/golang-jwt/jwt) |
-| **AWS Runtime** | AWS Lambda |
-| **Persistence** | AWS DynamoDB |
-| **API Gateway** | AWS API Gateway |
-| **Email Service** | AWS Simple Email Service (SES) |
-| **Infrastructure as Code** | AWS CDK (TypeScript) |
 
 ---
 
