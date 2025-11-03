@@ -1,17 +1,56 @@
-// import * as cdk from 'aws-cdk-lib/core';
-// import { Template } from 'aws-cdk-lib/assertions';
-// import * as UserManager from '../lib/user-manager-stack';
+import { App } from 'aws-cdk-lib';
+import { Template, Match } from 'aws-cdk-lib/assertions';
+import { UserManagerStack } from '../lib/user-manager-stack';
 
-// example test. To run these tests, uncomment this file along with the
-// example resource in lib/user-manager-stack.ts
-test('SQS Queue Created', () => {
-//   const app = new cdk.App();
-//     // WHEN
-//   const stack = new UserManager.UserManagerStack(app, 'MyTestStack');
-//     // THEN
-//   const template = Template.fromStack(stack);
+function synth() {
+    const app = new App();
+    const stack = new UserManagerStack(app, 'UserManagerStackTest', {
+        env: { account: '111111111111', region: 'eu-central-1' },
+    });
+    return Template.fromStack(stack);
+}
 
-//   template.hasResourceProperties('AWS::SQS::Queue', {
-//     VisibilityTimeout: 300
-//   });
+describe('UserManagerStack', () => {
+    test('Lambda is created with expected properties', () => {
+        const template = synth();
+        template.hasResourceProperties('AWS::Lambda::Function', {
+            Runtime: 'provided.al2023',
+            Handler: 'bootstrap',
+            Environment: {
+                Variables: Match.objectLike({
+                    APP_JWT_SECRET_PARAM: '/user-manager/app/jwt-secret',
+                }),
+            },
+        });
+    });
+
+    test('API Gateway method integrates with Lambda', () => {
+        const template = synth();
+        template.hasResourceProperties('AWS::ApiGateway::Method', {
+            HttpMethod: 'ANY',
+            Integration: Match.objectLike({
+                Type: 'AWS_PROXY',
+                IntegrationHttpMethod: 'POST',
+                Uri: Match.objectLike({ 'Fn::Join': Match.anyValue() }),
+            }),
+        });
+    });
+
+    test('API Gateway can invoke the Lambda', () => {
+        const template = synth();
+        template.hasResourceProperties('AWS::Lambda::Permission', {
+            Action: 'lambda:InvokeFunction',
+            Principal: 'apigateway.amazonaws.com',
+        });
+    });
+
+    test('DynamoDB table "users" with email-index', () => {
+        const template = synth();
+
+        template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+            GlobalSecondaryIndexes: Match.arrayWith([
+                Match.objectLike({ IndexName: 'email-index' }),
+            ]),
+        })
+    });
 });
