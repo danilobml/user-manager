@@ -25,7 +25,7 @@ describe('UserManagerStack', () => {
         });
     });
 
-    test('API Gateway method integrates with Lambda', () => {
+    test('APIGateway exists and integrates with Lambda', () => {
         const template = synth();
         template.hasResourceProperties('AWS::ApiGateway::Method', {
             HttpMethod: 'ANY',
@@ -37,7 +37,7 @@ describe('UserManagerStack', () => {
         });
     });
 
-    test('API Gateway can invoke the Lambda', () => {
+    test('APIGateway can invoke the Lambda', () => {
         const template = synth();
         template.hasResourceProperties('AWS::Lambda::Permission', {
             Action: 'lambda:InvokeFunction',
@@ -45,7 +45,7 @@ describe('UserManagerStack', () => {
         });
     });
 
-    test('DynamoDB table "users" with email-index', () => {
+    test('DynamoDB table "users" with email-index exists', () => {
         const template = synth();
 
         template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
