@@ -19,6 +19,7 @@ describe('UserManagerStack', () => {
             Environment: {
                 Variables: Match.objectLike({
                     APP_JWT_SECRET_PARAM: '/user-manager/app/jwt-secret',
+                    APP_API_KEY_PARAM: '/user-manager/app/api-key',
                 }),
             },
         });
