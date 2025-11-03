@@ -8,7 +8,7 @@ import (
 	"github.com/danilobml/user-manager/internal/errs"
 	"github.com/danilobml/user-manager/internal/helpers"
 	"github.com/danilobml/user-manager/internal/httpx/middleware"
-	mailer "github.com/danilobml/user-manager/internal/mailer/model"
+	mailer "github.com/danilobml/user-manager/internal/mailer/service"
 	"github.com/danilobml/user-manager/internal/user/dtos"
 	"github.com/danilobml/user-manager/internal/user/jwt"
 	"github.com/danilobml/user-manager/internal/user/model"
